@@ -1,14 +1,19 @@
-# Sử dụng Tomcat chính thức
-FROM tomcat:9.0-jdk11
+# Tomcat 10 (Jakarta Servlet) + Java 17
+FROM tomcat:10.1-jdk17-temurin
 
-# Xóa app mặc định
-RUN rm -rf /usr/local/tomcat/webapps/*
+# Làm sạch webapps mặc định
+RUN rm -rf "$CATALINA_HOME/webapps"/*
 
-# Copy file WAR (nhớ đổi đúng tên file WAR đã build ra)
-COPY ch04_ex1_survey.war /usr/local/tomcat/webapps/ROOT.war
+# Copy WAR vào ROOT để chạy ở "/"
+COPY ch04_ex1_survey.war "$CATALINA_HOME/webapps/ROOT.war"
 
-# Expose cổng
-EXPOSE 8080
+# Thay server.xml để dùng cổng từ biến môi trường $PORT
+COPY docker/server.xml "$CATALINA_HOME/conf/server.xml"
 
-# Chạy Tomcat
-CMD ["catalina.sh", "run"]
+# Script khởi động: set system property PORT cho Tomcat
+COPY docker/run.sh /usr/local/bin/run.sh
+RUN chmod +x /usr/local/bin/run.sh
+
+# Không cần EXPOSE vì Render tự set
+CMD ["run.sh"]
+
