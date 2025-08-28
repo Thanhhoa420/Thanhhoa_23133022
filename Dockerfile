@@ -1,19 +1,21 @@
-# Tomcat 10 (Jakarta Servlet) + JDK 17
-FROM tomcat:10.1-jdk17-temurin
+FROM openjdk:24-jdk-slim AS base
 
-# Dọn app mặc định
-RUN rm -rf "$CATALINA_HOME/webapps"/*
+# Cài wget + tar
+RUN apt-get update && apt-get install -y wget tar && rm -rf /var/lib/apt/lists/*
 
-# Copy WAR của bạn -> chạy ở context root "/"
-# ĐỔI tên file cho đúng nếu khác
-COPY ch04_ex1_survey.war "$CATALINA_HOME/webapps/ROOT.war"
+# Cài Tomcat
+RUN wget https://archive.apache.org/dist/tomcat/tomcat-10/v10.0.27/bin/apache-tomcat-10.0.27.tar.gz \
+    && tar xzf apache-tomcat-10.0.27.tar.gz \
+    && mv apache-tomcat-10.0.27 /usr/local/tomcat \
+    && rm apache-tomcat-10.0.27.tar.gz
 
-# Render cấp biến PORT động -> sửa server.xml để Tomcat lắng nghe ${PORT}
-RUN sed -i 's/port="8080"/port="${PORT}"/' "$CATALINA_HOME/conf/server.xml" \
- && sed -i 's/redirectPort="8443"/redirectPort="8443" URIEncoding="UTF-8"/' "$CATALINA_HOME/conf/server.xml"
+ENV CATALINA_HOME=/usr/local/tomcat
+ENV PATH="$CATALINA_HOME/bin:$PATH"
 
-# Đảm bảo UTF-8
-ENV CATALINA_OPTS="-Dfile.encoding=UTF-8"
+# Copy war vào Tomcat
+RUN rm -rf /usr/local/tomcat/webapps/*
+COPY ch04_ex1_survey_sol.war /usr/local/tomcat/webapps/ROOT.war
 
-# Chạy Tomcat
-CMD ["catalina.sh", "run"]
+EXPOSE 8080
+CMD ["sh", "-c", "$CATALINA_HOME/bin/catalina.sh run"]
+
